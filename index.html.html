@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pateros Online Palengke</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem;
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .product-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .product-card h2 {
+            color: #e67e22;
+            margin-bottom: 0.5rem;
+        }
+
+        .price {
+            font-size: 1.5rem;
+            color: #27ae60;
+            margin: 1rem 0;
+        }
+
+        .cart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .checkout-form {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Pateros Online Palengke</h1>
+        <p>Shop for authentic Pateros merchandise, supplies, and more!</p>
+    </header>
+
+    <div class="container">
+        <div class="products">
+            <!-- Product cards will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <h2>Shopping Cart</h2>
+        <div id="cartItems"></div>
+        <p>Total: ₱<span id="cartTotal">0</span></p>
+        <button onclick="showCheckout()">Checkout</button>
+        <button onclick="closeCart()">Continue Shopping</button>
+    </div>
+
+    <!-- Checkout Form -->
+    <div class="checkout-form" id="checkoutForm">
+        <h2>Checkout</h2>
+        <form id="checkoutForm">
+            <input type="text" placeholder="Full Name" required>
+            <input type="email" placeholder="Email" required>
+            <input type="tel" placeholder="Phone Number" required>
+            <input type="text" placeholder="Address" required>
+            <input type="number" placeholder="Credit Card Number" required>
+            <button type="submit">Complete Purchase</button>
+        </form>
+    </div>
+
+    <script>
+        const products = [
+            {
+                name: "Alfombra",
+                price: 350,
+                description: "Faux suede slipper made with abaca."
+            },
+            {
+                name: "Balut Pateros",
+                price: 25,
+                description: "Boiled fertilized duck embryo."
+            },
+            {
+                name: "Inutak",
+                price: 80,
+                description: "Glutinous rice flour and coconut milk rice cake."
+            },
+            {
+                name: "Lola Berta’s Lechon",
+                price: 8000,
+                description: "Meticulously stuffed with fragrant banana leaves and slow-roasted."
+            },
+            {
+                name: "Salted Duck Egg",
+                price: 60,
+                description: "Preserved duck egg in brine or salted charcoal."
+            }
+        ];
+
+        let cart = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const productsContainer = document.querySelector('.products');
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+
+                // Sanitize filename
+                const imageFile = product.name.replace(/ /g, '%20') + '.jpg';
+
+                productCard.innerHTML = `
+                    <img src="${imageFile}" alt="${product.name}">
+                    <h2>${product.name}</h2>
+                    <p>${product.description}</p>
+                    <p class="price">₱${product.price.toLocaleString()}</p>
+                    <button onclick="addToCart('${product.name}', ${product.price})">Add to Cart</button>
+                `;
+                productsContainer.appendChild(productCard);
+            });
+        });
+
+        function addToCart(name, price) {
+            const existingItem = cart.find(item => item.name === name);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ name, price, quantity: 1 });
+            }
+            updateCartDisplay();
+            openCart();
+        }
+
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            let total = 0;
+
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div>
+                        <h3>${item.name}</h3>
+                        <p>₱${item.price} x ${item.quantity}</p>
+                    </div>
+                    <button onclick="removeFromCart('${item.name}')">×</button>
+                `;
+                cartItems.appendChild(itemElement);
+            });
+
+            cartTotal.textContent = total.toLocaleString();
+        }
+
+        function removeFromCart(name) {
+            cart = cart.filter(item => item.name !== name);
+            updateCartDisplay();
+        }
+
+        function openCart() {
+            document.getElementById('cartModal').style.display = 'block';
+        }
+
+        function closeCart() {
+            document.getElementById('cartModal').style.display = 'none';
+        }
+
+        function showCheckout() {
+            document.getElementById('checkoutForm').style.display = 'block';
+        }
+
+        document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            alert('Thank you for your purchase!');
+            cart = [];
+            updateCartDisplay();
+            closeCart();
+            document.getElementById('checkoutForm').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
